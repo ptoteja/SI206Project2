@@ -72,16 +72,57 @@ def find_urls(s):
 ## Start with this page: https://www.si.umich.edu/directory?field_person_firstname_value=&field_person_lastname_value=&rid=All  
 ## End with this page: https://www.si.umich.edu/directory?field_person_firstname_value=&field_person_lastname_value=&rid=All&page=11 
 
+def get_umsi_data():
 
+	############## Still need to check for cached data    
+	count = 0
+	umsi_list = []
+	while(count < 12):
 
+		base_url = "https://www.si.umich.edu/directory?field_person_firstname_value=&field_person_lastname_value=&rid=All&page=" + str(count)
+		response = requests.get(base_url, headers = {'User-Agent': 'SI_CLASS'})
+		htmldoc = response.text
 
-
+		soup = BeautifulSoup(htmldoc, "html.parser")
+		toString = str(soup)
+		
+		umsi_list.append(toString)
+		count += 1
+	#print(umsi_list[0][:100]) #1 character off, but values are all the same
+	return umsi_list
 
 
 ## PART 2 (b) - Create a dictionary saved in a variable umsi_titles 
 ## whose keys are UMSI people's names, and whose associated values are those people's titles, e.g. "PhD student" or "Associate Professor of Information"...
 
+count = 0
+list_of_pages_html = [] #holds the html for each page
+umsi_titles = {}
+list_of_titles = []
+list_of_positions = []
+while(count < 12):
 
+	response = requests.get("https://www.si.umich.edu/directory?field_person_firstname_value=&field_person_lastname_value=&rid=All&page=" + str(count), headers = {'User-Agent': 'SI_CLASS'})
+	htmldoc = response.text
+	soup = BeautifulSoup(htmldoc,"html.parser")
+	list_of_pages_html.append(soup)
+	count += 1
+for html in list_of_pages_html:
+
+	people = html.find_all("div",{"class":"views-row"})
+
+	for title in html.find_all(class_ = "field-item even", property = "dc:title"):
+		if title.h2:
+			list_of_titles.append(title.h2.text)
+	
+
+	for role in html.find_all(class_ = "field-name-field-person-titles"):
+		list_of_positions.append(role.text)
+	
+	
+
+for i in range(len(list_of_titles)):
+	umsi_titles[list_of_titles[i]] = list_of_positions[i]
 
 
 
@@ -145,7 +186,7 @@ class PartTwo(unittest.TestCase):
 	def test_list_type(self):
 		self.assertEqual(type(get_umsi_data()),type([]))
 	def test_begin_of_list(self):
-		self.assertEqual(get_umsi_data()[0][:100],"""<!DOCTYPE html>
+		self.assertEqual(get_umsi_data()[0][:100],"""<!DOCTYPE html>			
 <!--[if IEMobile 7]><html class="iem7"  lang="en" dir="ltr"><![endif]-->
 <!--[if lte""", "Testing the beginning of the first element of the return value of get_umsi_data")
 	def test_part_of_list(self):
